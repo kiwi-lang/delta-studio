@@ -18,6 +18,7 @@ ysAudioSystem::~ysAudioSystem() {
 ysError ysAudioSystem::CreateAudioSystem(ysAudioSystem **newAudioSystem, API api) {
     YDS_ERROR_DECLARE("CreateAudioSystem");
 
+#ifdef YFS_WITH_RENDERING
     if (newAudioSystem == nullptr) return YDS_ERROR_RETURN_STATIC(ysError::InvalidParameter);
     *newAudioSystem = nullptr;
 
@@ -31,6 +32,7 @@ ysError ysAudioSystem::CreateAudioSystem(ysAudioSystem **newAudioSystem, API api
         *newAudioSystem = nullptr;
         break;
     }
+#endif
 
     return YDS_ERROR_RETURN_STATIC(ysError::None);
 }

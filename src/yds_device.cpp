@@ -38,6 +38,7 @@ ysDevice::~ysDevice() {
 }
 
 ysError ysDevice::CreateDevice(ysDevice **newDevice, DeviceAPI API) {
+#ifdef YFS_WITH_RENDERING
     YDS_ERROR_DECLARE("CreateDevice");
 
     if (newDevice == nullptr) return YDS_ERROR_RETURN_STATIC(ysError::InvalidParameter);
@@ -59,7 +60,7 @@ ysError ysDevice::CreateDevice(ysDevice **newDevice, DeviceAPI API) {
         *newDevice = new ysVulkanDevice;
         break;
     }
-
+#endif
     return YDS_ERROR_RETURN_STATIC(ysError::None);
 }
 
