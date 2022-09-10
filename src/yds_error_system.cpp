@@ -26,12 +26,14 @@ ysErrorSystem::~ysErrorSystem() {
 }
 
 ysErrorSystem *ysErrorSystem::GetInstance() {
-    if (g_instance == nullptr) g_instance = new ysErrorSystem;
+    if (g_instance == nullptr) 
+        g_instance = new ysErrorSystem;
+
     return g_instance;
 }
 
 void ysErrorSystem::Destroy() {
-    delete [] g_instance;
+    delete g_instance;
 }
 
 ysError ysErrorSystem::RaiseError(ysError error, unsigned int line, ysObject *object, const char *file, const char *msg, bool affectStack) {

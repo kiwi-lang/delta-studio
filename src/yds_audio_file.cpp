@@ -10,7 +10,6 @@ ysAudioFile::ysAudioFile() {
 
     m_maxBufferSamples = 0;
     m_bufferDataSamples = 0;
-    m_buffer = nullptr;
     m_currentReadingOffset = 0;
 
     m_fileOpen = false;
@@ -24,14 +23,12 @@ ysAudioFile::ysAudioFile(Platform platform, AudioFormat format) : ysWindowSystem
 
     m_maxBufferSamples = 0;
     m_bufferDataSamples = 0;
-    m_buffer = nullptr;
     m_currentReadingOffset = 0;
 
     m_fileOpen = false;
 }
 
 ysAudioFile::~ysAudioFile() {
-    if (m_buffer) delete[] m_buffer;
 }
 
 ysAudioFile::Error ysAudioFile::OpenFile(const char *fname) {
@@ -55,23 +52,23 @@ ysAudioFile::Error ysAudioFile::FillBuffer(SampleOffset offset) {
             return Error::ReadOutOfRange;
         }
 
-        void *target = malloc(m_externalBuffer->GetBufferSize());
+        std::vector<int8_t> target(m_externalBuffer->GetBufferSize());
 
-        Error readError = GenericRead(offset, m_externalBuffer->GetSampleCount(), target);
+        Error readError = GenericRead(offset, m_externalBuffer->GetSampleCount(), target.data());
         if (readError != Error::None) {
             return readError;
         }
 
-        m_externalBuffer->EditBuffer(target);
-        free(target);
+        m_externalBuffer->EditBuffer(target.data());
     }
     // Use Internal Buffer
     else {
         if (offset + m_maxBufferSamples > m_sampleCount) {
             return Error::ReadOutOfRange;
         }
-
-        Error readError = GenericRead(offset, m_maxBufferSamples, (void *)m_buffer);
+        m_buffer.resize(m_maxBufferSamples);
+            
+        Error readError = GenericRead(offset, m_maxBufferSamples, (void *)m_buffer.data());
         if (readError != Error::None) {
             return readError;
         }
@@ -90,33 +87,18 @@ ysAudioFile::Error ysAudioFile::InitializeInternalBuffer(SampleOffset samples, b
     if (!m_fileOpen) return Error::NoFileOpen;
 
     int newSize = m_audioParameters.GetSizeFromSamples(samples);
-    char *newBuffer = new char[newSize];
-    if (newBuffer == nullptr) return Error::OutOfMemory;
+    m_buffer.resize(newSize);
 
-    if (saveData && m_buffer != nullptr) {
-        int copySamples = (m_bufferDataSamples < samples) ? m_bufferDataSamples : samples;
-        int copySize = m_audioParameters.GetSizeFromSamples(copySamples);
-
-        if (copySize > 0) memcpy(newBuffer, m_buffer, copySize);
-    }
-
-    // Delete original buffer
-    delete[] m_buffer;
-
-    m_buffer = newBuffer;
     m_maxBufferSamples = samples;
     m_bufferDataSamples = 0;
-    m_externalBuffer = NULL;
+    m_externalBuffer = nullptr;
 
     return Error::None;
 }
 
 void ysAudioFile::DestroyInternalBuffer() {
-    delete[] m_buffer;
-
     m_maxBufferSamples = 0;
     m_bufferDataSamples = 0;
-    m_buffer = 0;
 }
 
 ysAudioFile::Error ysAudioFile::AttachExternalBuffer(ysAudioBuffer *buffer) {

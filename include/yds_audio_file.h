@@ -1,6 +1,8 @@
 #ifndef YDS_AUDIO_FILE_H
 #define YDS_AUDIO_FILE_H
 
+#include <vector>
+
 #include "yds_window_system_object.h"
 
 #include "yds_audio_parameters.h"
@@ -51,8 +53,8 @@ public:
     SampleOffset GetCurrentReadingOffset() const { return m_currentReadingOffset; }
     const ysAudioParameters *GetAudioParameters() const { return &m_audioParameters; }
 
-    SampleOffset GetBufferSize() const { return (m_buffer) ? m_maxBufferSamples : 0; }
-    const void *GetBuffer() const { return m_buffer; }
+    SampleOffset GetBufferSize() const { return m_buffer.size(); }
+    const void *GetBuffer() const { return m_buffer.data(); }
 
 protected:
     // General Read Functions
@@ -69,7 +71,7 @@ protected:
     // Internal Buffer
     SampleOffset m_maxBufferSamples;
     SampleOffset m_bufferDataSamples;
-    char *m_buffer;
+    std::vector<int8_t> m_buffer;
 
     // Streaming
     SampleOffset m_currentReadingOffset;
