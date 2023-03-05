@@ -115,14 +115,15 @@ ysError dbasic::DeltaEngine::CreateGameWindow(const GameEngineSettings &settings
         settings.WindowPositionX, settings.WindowPositionY,
         settings.WindowWidth, settings.WindowHeight,
         mainMonitor));
+
     m_gameWindow->AttachEventHandler(&m_windowHandler);
 
     YDS_NESTED_ERROR_CALL(ysInputSystem::CreateInputSystem(&m_inputSystem, ysWindowSystemObject::Platform::Windows));
     m_windowSystem->AssignInputSystem(m_inputSystem);
     m_inputSystem->Initialize();
 
-    m_mainKeyboard = m_inputSystem->GetKeyboardAggregator();
-    m_mainMouse = m_inputSystem->GetMouseAggregator();
+    m_mainKeyboard = m_inputSystem->GetDefaultKeyboard();
+    m_mainMouse = m_inputSystem->GetDefaultMouse();
 
     // Create the graphics device
     YDS_NESTED_ERROR_CALL(ysDevice::CreateDevice(&m_device, settings.API));
@@ -275,12 +276,11 @@ ysError dbasic::DeltaEngine::Destroy() {
     m_mainKeyboard = nullptr;
     m_mainMouse = nullptr;
 
-    YDS_NESTED_ERROR_CALL(ysInputSystem::DestroyInputSystem(m_inputSystem));
-
     m_windowSystem->DeleteAllWindows();
     m_gameWindow = nullptr;
 
     ysWindowSystem::DestroyWindowSystem(m_windowSystem);
+    YDS_NESTED_ERROR_CALL(ysInputSystem::DestroyInputSystem(m_inputSystem));
 
     return YDS_ERROR_RETURN(ysError::None);
 }
@@ -384,7 +384,7 @@ ysError dbasic::DeltaEngine::InitializeShaders(const char *shaderDirectory) {
     m_skinnedFormat.AddChannel("POSITION", 0, ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_FLOAT);
     m_skinnedFormat.AddChannel("TEXCOORD", sizeof(float) * 4, ysRenderGeometryChannel::ChannelFormat::R32G32_FLOAT);
     m_skinnedFormat.AddChannel("NORMAL", sizeof(float) * (4 + 2), ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_FLOAT);
-    m_skinnedFormat.AddChannel("BONE_INDICES", sizeof(float) * (4 + 2 + 4), ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_UINT);
+    m_skinnedFormat.AddChannel("BONE_INDICES", sizeof(float) * (4 + 2 + 4), ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_INT);
     m_skinnedFormat.AddChannel("BONE_WEIGHTS", sizeof(float) * (4 + 2 + 4) + sizeof(int) * 4, ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_FLOAT);
 
     m_standardFormat.AddChannel("POSITION", 0, ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_FLOAT);
@@ -395,7 +395,8 @@ ysError dbasic::DeltaEngine::InitializeShaders(const char *shaderDirectory) {
     m_consoleVertexFormat.AddChannel("TEXCOORD", sizeof(float) * 2, ysRenderGeometryChannel::ChannelFormat::R32G32_FLOAT);
     m_consoleVertexFormat.AddChannel("COLOR", sizeof(float) * (2 + 2), ysRenderGeometryChannel::ChannelFormat::R32G32B32A32_FLOAT);
 
-    YDS_NESTED_ERROR_CALL(m_device->CreateInputLayout(&m_inputLayout, m_vertexShader, &m_standardFormat));
+    YDS_NESTED_ERROR_CALL(m_device->CreateInputLayout(
+            &m_inputLayout, m_vertexShader, &m_standardFormat));
     YDS_NESTED_ERROR_CALL(m_device->CreateInputLayout(&m_skinnedInputLayout, m_vertexSkinnedShader, &m_skinnedFormat));
     YDS_NESTED_ERROR_CALL(m_device->CreateInputLayout(&m_consoleInputLayout, m_consoleVertexShader, &m_consoleVertexFormat));
     YDS_NESTED_ERROR_CALL(m_device->CreateInputLayout(&m_saqInputLayout, m_saqVertexShader, &m_standardFormat));
@@ -430,6 +431,12 @@ ysError dbasic::DeltaEngine::InitializeBreakdownTimer(const char *loggingDirecto
 
     std::string logFile = loggingDirectory;
     logFile += "/frame_breakdown_log.csv";
+
+#ifdef _DEBUG
+    m_breakdownTimer.SetEnabled(true);
+#else
+    m_breakdownTimer.SetEnabled(false);
+#endif
 
     m_breakdownTimer.OpenLogFile(logFile);
 
